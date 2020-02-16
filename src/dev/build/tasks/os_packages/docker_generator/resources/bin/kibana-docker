@@ -40,6 +40,7 @@ kibana_vars=(
     i18n.locale
     kibana.defaultAppId
     kibana.index
+    kibana.trevApiServer
     logging.dest
     logging.quiet
     logging.silent

@@ -56,6 +56,7 @@ export default function (kibana) {
         autocompleteTerminateAfter: Joi.number().integer().min(1).default(100000),
         // TODO Also allow units here like in elasticsearch config once this is moved to the new platform
         autocompleteTimeout: Joi.number().integer().min(1).default(1000),
+        trevApiServer: Joi.string().default('localhost:7000'),
       }).default();
     },
 

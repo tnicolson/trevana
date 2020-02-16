@@ -181,6 +181,7 @@ app.directive('discoverApp', function () {
 });
 
 function discoverController(
+  $http,
   $element,
   $route,
   $scope,
@@ -241,6 +242,8 @@ function discoverController(
   const $appStatus = $scope.appStatus = this.appStatus = {
     dirty: !savedSearch.id
   };
+
+  let inspectorRequest;
 
   const getTopNavLinks = () => {
     const newSearch = {
@@ -360,12 +363,146 @@ function discoverController(
       }
     };
 
+    const trevApiServer = chrome.getInjected('trevApiServer');
+
+    const makeUpdate = (name, success, fail) => {
+      const nameCapitalized = name.charAt(0).toUpperCase() + name.slice(1);
+      return {
+        id: name + 'Search',
+        label: nameCapitalized,
+        description: `${nameCapitalized} all results in this set`,
+        run() {
+          const index = $scope.indexPattern.title;
+          $http.post(`http://${trevApiServer}/${name}-query`, {
+            'index': index,
+            'query': inspectorRequest.request.json.query,
+          })
+            .then((resp) => {
+              toastNotifications.addSuccess({
+                title: `${success} ${resp.data.updated} of ${resp.data.total} results`
+              });
+            })
+            .catch((error) => {
+              toastNotifications.addError(error, {
+                title: `${fail} failed: ${error.data}`
+              });
+            });
+        }
+      };
+    };
+
+    const ackSearch = makeUpdate('acknowledge', 'Acknowledged', 'Acknowledge');
+    const suppressSearch = makeUpdate('suppress', 'Suppressed', 'Suppress');
+    const preexistSearch = makeUpdate('preexisting', 'Marked preexisting on', 'Mark preexisting');
+
+    const reclassifySearch = {
+      id: 'reclassifySearch',
+      label: 'Reclassify',
+      description: 'Reclassify all results in this set',
+      run() {
+        const index = $scope.indexPattern.title;
+        $http.post(`http://${trevApiServer}/reclassify-query`, {
+          'index': index,
+          'query': inspectorRequest.request.json.query,
+        })
+          .then((resp) => {
+            // TODO provide a link they can click which calls filterGen.add('cohort', resp.data.cohort, '+')
+            toastNotifications.addSuccess({
+              title: `Reclassifying ${resp.data.updated} of ${resp.data.total} results as cohort '${resp.data.cohort}'`
+            });
+          })
+          .catch((error) => {
+            toastNotifications.addError(error, {
+              title: `Reclassify failed: ${error.data}`
+            });
+          });
+      }
+    };
+
+    const commentSearch = {
+      id: 'commentSearch',
+      label: 'Comment',
+      description: 'Comment classifications matching this query',
+      run() {
+        const index = $scope.indexPattern.title;
+        const comment = prompt('Enter your comment:', '');
+        $http.post(`http://${trevApiServer}/comment-query`, {
+          'index': index,
+          'query': inspectorRequest.request.json.query,
+          'comment': comment,
+        })
+          .then((resp) => {
+            toastNotifications.addSuccess({
+              title: `Commented ${resp.data.updated} of ${resp.data.total} results`
+            });
+          })
+          .catch((error) => {
+            toastNotifications.addError(error, {
+              title: `Comment failed: ${error.data}`
+            });
+          });
+      }
+    };
+
+    const assignSearch = {
+      id: 'assignSearch',
+      label: 'Assign',
+      description: 'Assign classifications matching this query to a user',
+      run() {
+        const index = $scope.indexPattern.title;
+        const assignee = prompt('Enter assignee:', '');
+        $http.post(`http://${trevApiServer}/assign-query`, {
+          'index': index,
+          'query': inspectorRequest.request.json.query,
+          'assignee': assignee,
+        })
+          .then((resp) => {
+            toastNotifications.addSuccess({
+              title: `Assigned ${resp.data.updated} of ${resp.data.total} results`
+            });
+          })
+          .catch((error) => {
+            toastNotifications.addError(error, {
+              title: `Assign failed: ${error.data}`
+            });
+          });
+      }
+    };
+
+    const exportSearch = {
+      id: 'exportSearch',
+      label: 'Export',
+      description: 'Export this search for external tools',
+      run() {
+        const index = $scope.indexPattern.title;
+        $http.post(`http://${trevApiServer}/store-query`, {
+          'index': index,
+          'query': inspectorRequest.request.json.query,
+        })
+          .then((resp) => {
+            toastNotifications.addSuccess({ title: `Search exported as '${resp.data._id}'` });
+          })
+          .catch((error) => {
+            toastNotifications.addError(error, {
+              title: `Export failed: ${error.data}`
+            });
+          });
+      }
+    };
+
     return [
       newSearch,
       ...(uiCapabilities.discover.save ? [saveSearch] : []),
       openSearch,
       shareSearch,
       inspectSearch,
+      ackSearch,
+      suppressSearch,
+      preexistSearch,
+      commentSearch,
+      assignSearch,
+      reclassifySearch,
+      exportSearch,
     ];
   };
 
@@ -821,7 +958,6 @@ function discoverController(
     $scope.fetchStatus = fetchStatuses.COMPLETE;
   }
 
-  let inspectorRequest;
 
   function logInspectorRequest() {
     inspectorAdapters.requests.reset();

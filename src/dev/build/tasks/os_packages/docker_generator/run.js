@@ -32,12 +32,12 @@ const chmodAsync = promisify(chmod);
 export async function runDockerGenerator(config, log, build) {
   const license = build.isOss() ? 'ASL 2.0' : 'Elastic License';
   const imageFlavor = build.isOss() ? '-oss' : '';
-  const imageTag = 'docker.elastic.co/kibana/kibana';
+  const imageTag = 'tnicolson/trevana/trevana';
   const versionTag = config.getBuildVersion();
   const artifactTarball = `kibana${ imageFlavor }-${ versionTag }-linux-x86_64.tar.gz`;
   const artifactsDir = config.resolveFromTarget('.');
   const dockerBuildDir = config.resolveFromRepo('build', 'kibana-docker', build.isOss() ? 'oss' : 'default');
-  const dockerOutputDir = config.resolveFromTarget(`kibana${ imageFlavor }-${ versionTag }-docker.tar.gz`);
+  const dockerOutputDir = config.resolveFromTarget(`trevana${ imageFlavor }-${ versionTag }-docker.tar.gz`);
   const scope = {
     artifactTarball,
     imageFlavor,

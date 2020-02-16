@@ -33,5 +33,6 @@ export function injectVars(server) {
     importAndExportableTypes,
     autocompleteTerminateAfter: serverConfig.get('kibana.autocompleteTerminateAfter'),
     autocompleteTimeout: serverConfig.get('kibana.autocompleteTimeout'),
+    trevApiServer: serverConfig.get('kibana.trevApiServer'),
   };
 }
